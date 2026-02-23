@@ -61,7 +61,7 @@ Peca desenfileirar(Fila *f) {
   Peca p = f->itens[f->frente];
   f->frente = (f->frente + 1) % MAX_FILA;
   f->total--;
-  // Sempre que uma peca sai, uma nova entra no final
+  // Manter a fila sempre cheia gerando nova peca apos remocao ou reserva
   enfileirar(f);
   return p;
 }
@@ -75,19 +75,52 @@ int pilhaVazia(Pilha *p) { return p->topo == -1; }
 int pilhaCheia(Pilha *p) { return p->topo == MAX_PILHA - 1; }
 
 void empilhar(Pilha *p, Peca peca) {
-  if (pilhaCheia(p)) {
-    printf("\n[AVISO] Pilha de reserva cheia!\n");
+  if (pilhaCheia(p))
     return;
-  }
   p->itens[++(p->topo)] = peca;
 }
 
 Peca desempilhar(Pilha *p) { return p->itens[(p->topo)--]; }
 
+// --- Operacoes de Troca (Nivel Avancado) ---
+
+// Troca simples (Opcao 4)
+void trocarFilaComPilha(Fila *f, Pilha *p) {
+  if (filaVazia(f) || pilhaVazia(p)) {
+    printf("\n[ERRO] Fila ou Pilha vazia! Nao e possivel realizar a troca.\n");
+    return;
+  }
+  // Swap front items
+  Peca temp = f->itens[f->frente];
+  f->itens[f->frente] = p->itens[p->topo];
+  p->itens[p->topo] = temp;
+  printf("\nAcao: troca realizada entre o inicio da fila e o topo da pilha.\n");
+}
+
+// Troca multipla (Opcao 5)
+void trocaMultipla(Fila *f, Pilha *p) {
+  // Verifica se ambos tem pelo menos 3 pecas
+  if (f->total < 3 || (p->topo + 1) < 3) {
+    printf("\n[ERRO] Sao necessarias pelo menos 3 pecas em ambas as "
+           "estruturas!\n");
+    return;
+  }
+  for (int i = 0; i < 3; i++) {
+    int idxFila = (f->frente + i) % MAX_FILA;
+    int idxPilha = p->topo - i;
+
+    Peca temp = f->itens[idxFila];
+    f->itens[idxFila] = p->itens[idxPilha];
+    p->itens[idxPilha] = temp;
+  }
+  printf("\nAcao: troca realizada entre os 3 primeiros da fila e os 3 da "
+         "pilha.\n");
+}
+
 // --- Interface ---
 
 void exibirEstado(Fila f, Pilha p) {
-  printf("\n========================================\n");
+  printf("\n----------------------------------------\n");
   printf("Estado atual:\n\n");
 
   // Exibe Fila
@@ -108,7 +141,7 @@ void exibirEstado(Fila f, Pilha p) {
       printf("[%c %d] ", p.itens[i].nome, p.itens[i].id);
     }
   }
-  printf("\n========================================\n");
+  printf("\n----------------------------------------\n");
 }
 
 int main() {
@@ -127,12 +160,14 @@ int main() {
   int opcao = -1;
   while (opcao != 0) {
     exibirEstado(fila, pilha);
-    printf("\nOpcoes de Acao:\n");
-    printf("1 - Jogar peca (Fila)\n");
-    printf("2 - Reservar peca (Fila -> Pilha)\n");
-    printf("3 - Usar peca reservada (Pilha)\n");
+    printf("\nOpcoes disponiveis:\n");
+    printf("1 - Jogar peca da frente da fila\n");
+    printf("2 - Enviar peca da fila para a pilha de reserva\n");
+    printf("3 - Usar peca da pilha de reserva\n");
+    printf("4 - Trocar peca da frente da fila com o topo da pilha\n");
+    printf("5 - Trocar os 3 primeiros da fila com as 3 pecas da pilha\n");
     printf("0 - Sair\n");
-    printf("\nOpcao: ");
+    printf("\nOpcao escolhida: ");
 
     if (scanf("%d", &opcao) != 1) {
       printf("\nEntrada invalida!\n");
@@ -144,30 +179,37 @@ int main() {
     switch (opcao) {
     case 1: {
       Peca p = desenfileirar(&fila);
-      printf("\nVoce jogou a peca: [%c %d]\n", p.nome, p.id);
+      printf("\nAcao: Voce jogou a peca [%c %d]\n", p.nome, p.id);
     } break;
     case 2:
       if (pilhaCheia(&pilha)) {
-        printf("\n[ERRO] Nao ha espaco na reserva!\n");
+        printf("\n[ERRO] Pilha de reserva cheia!\n");
       } else {
         Peca p = desenfileirar(&fila);
         empilhar(&pilha, p);
-        printf("\nPeca [%c %d] movida para a reserva.\n", p.nome, p.id);
+        printf("\nAcao: Peca [%c %d] enviada para a pilha de reserva.\n",
+               p.nome, p.id);
       }
       break;
     case 3:
       if (pilhaVazia(&pilha)) {
-        printf("\n[ERRO] Pilha de reserva esta vazia!\n");
+        printf("\n[ERRO] Pilha de reserva vazia!\n");
       } else {
         Peca p = desempilhar(&pilha);
-        printf("\nVoce usou a peca reservada: [%c %d]\n", p.nome, p.id);
+        printf("\nAcao: Voce usou a peca reserva [%c %d]\n", p.nome, p.id);
       }
       break;
+    case 4:
+      trocarFilaComPilha(&fila, &pilha);
+      break;
+    case 5:
+      trocaMultipla(&fila, &pilha);
+      break;
     case 0:
-      printf("\nEncerrando Tetris Stack...\n");
+      printf("\nEncerrando o programa. ByteBros agradece!\n");
       break;
     default:
-      printf("\nOpcao invalida!\n");
+      printf("\nOpcao invalida! Tente novamente.\n");
       break;
     }
   }
